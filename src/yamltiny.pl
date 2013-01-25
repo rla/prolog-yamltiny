@@ -23,7 +23,8 @@ yamltiny_read(File, Documents):-
 yamltiny_parse(Codes, Documents):-
     yamltiny_lex(Codes, Lines),
     phrase(documents(DocLines), Lines, []),
-    maplist(yamltiny_parse_document, DocLines, Documents).
+    maplist(yamltiny_parse_document, DocLines, Tmp),
+    Documents = Tmp.
 
 % Parses tokens into a list of document.
 % Documents are separated by markers --- or ...
@@ -57,21 +58,21 @@ yamltiny_parse_document(Lines, Document):-
 % Generic block parser.
 % Case for array.
 
-hash_or_array_or_text(Depth, Array) -->
+hash_or_array_or_text(Depth, array(Array)) -->
     lookahead(line(Depth, Text, _)),
     { prefix("- ", Text) }, !,
     array(Depth, Array).
 
 % Case for hash 'a: 3'.
     
-hash_or_array_or_text(Depth, Hash) -->
+hash_or_array_or_text(Depth, hash(Hash)) -->
     lookahead(line(Depth, Text, _)),
     { sublistchk(": ", Text) }, !,
     hash(Depth, Hash).
 
 % Case for hash 'a:\n'.
     
-hash_or_array_or_text(Depth, Hash) -->
+hash_or_array_or_text(Depth, hash(Hash)) -->
     lookahead(line(Depth, Text, _)),
     { suffix(":", Text) }, !,
     hash(Depth, Hash).
@@ -201,7 +202,8 @@ hash_entry(Depth, Entry) -->
 
 text(Depth, Text) -->
     text_collect(Depth, [], List),
-    { maplist(atom_codes, Atoms, List) },
+    { reverse(List, Reversed) },
+    { maplist(atom_codes, Atoms, Reversed) },
     { atomic_list_concat(Atoms, '', Text) }.
 
 % Case for line indented at least Depth
@@ -292,6 +294,21 @@ line([]) --> "".
 ln --> "\n\r", !.
 ln --> "\n", !.
 ln --> "\r".
+
+% For writing YAML.
+
+/*
+emit_hash([Entry|Entries]) -->
+    emit_hash_entry(Entry),
+    emit_hash(Entries).
+    
+emit_hash([]) --> "".
+
+emit_hash_entry(Key-Value):-
+    emit_hash_key(Key),
+    emit_hash_value(Value),
+    ln.
+*/
 
 % Grammar helper to extract the rest of elements
 % of the list.

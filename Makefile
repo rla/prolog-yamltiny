@@ -13,4 +13,4 @@ install:
 uninstall:
 	rm $(DEST)/yamltiny.pl
 
-.PHONY: test install
+.PHONY: test install uninstall
